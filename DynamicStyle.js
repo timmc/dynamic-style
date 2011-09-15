@@ -1,35 +1,36 @@
 /**
  * Allows scripts to dynamically add, edit, and remove global CSS rules.
- * 
+ *
  * Sample usage:
  * 	DynamicStyle.setStyle('activerow', 'tr#row-13 { background-color: yellow; }');
  * 	DynamicStyle.getStyle('activerow');
  * 	DynamicStyle.removeStyle('activerow');
  *
  * The technique (data: protocol in link element) was inspired by the testStyles bookmarklet on http://www.squarefree.com/bookmarklets/webdevel.html
- * 
- * @require	prototype.js
- * @version	0.4
- * @revision-date	2006-09-27
- * @license	cc-by-sa-2.5, GPL
- * @author	Tim McCormack
- * @author-url	http://www.brainonfire.net/
+ *
+ * Requires: JQuery.js
+ *
+ * @version			0.5
+ * @revision-date	2007-01-21
+ * @license			cc-by-sa-2.5, GPL
+ * @author			Tim McCormack
+ * @author-url		http://www.brainonfire.net/
  */
 function DynamicStyle()
 {
 	/**
 	 * Version information, in the format major.minor
 	 */
-	this.version = '0.4';
+	this.version = '0.5';
 
 	/*=================*
 	 * Private Members *
 	 *=================*/
-	
+
 	/**
 	 * Browser-specific data and functions.
 	 */
-	var _BROWSER_SPEC = 
+	var _BROWSER_SPEC =
 	{
 		'Opera':
 		{
@@ -38,7 +39,7 @@ function DynamicStyle()
 			postData:'\'',
 			dataPrep:function(data) { return escape(data); }
 		},
-		
+
 		'IE':
 		{
 			name:'Internet Explorer',
@@ -46,7 +47,7 @@ function DynamicStyle()
 			postData:'\')',
 			dataPrep:function(data) { return escape(escape(data)); }
 		},
-		
+
 		'Compliant':
 		{
 			name:'a compliant browser',
@@ -55,15 +56,15 @@ function DynamicStyle()
 			dataPrep:function(data) { return escape(data); }
 		}
 	};
-	
+
 	/**
 	 * One of the values inside _BROWSER_SPEC. For example, use _browser.dataPrep().
 	 */
 	var _browser = undefined;
-	
+
 	/**
 	 * An associative array of styles, indexed by user-specified handle. This serves as a cache for the actual escaped style data in the _styleBlock.
-	 * 
+	 *
 	 * I'm using a cache because I can't rely on the validity of unescaped data.
 	 */
 	var _styles =
@@ -75,15 +76,15 @@ function DynamicStyle()
 //			'style':'* { color: green; }'
 //		}
 	};
-	
+
 	/*===================*
 	 * Private Functions *
 	 *===================*/
-	
+
 	/**/
 	/* Helper methods */
 	/**/
-	
+
 	/**
 	 * Checks whether the handle is acceptable.  An acceptable handle is considered sanitized.
 	 */
@@ -94,7 +95,7 @@ function DynamicStyle()
 		else
 			return false;
 	};
-	
+
 	/**
 	 * Returns true if the handle is in use, false otherwise.
 	 */
@@ -102,11 +103,11 @@ function DynamicStyle()
 	{
 		return _styles[san_handle] !== undefined;
 	};
-	
+
 	/**/
 	/* DOM manipulation */
 	/**/
-	
+
 	var createStyleElement = function(san_handle)
 	{
 		var block = document.createElement('link');
@@ -120,7 +121,7 @@ function DynamicStyle()
 	/**/
 	/* Backing store manipulation */
 	/**/
-	
+
 	/**
 	 * Copy the style data into the style cache object. You should then use commitStyleData() to save this information into the page.
 	 */
@@ -128,7 +129,7 @@ function DynamicStyle()
 	{
 		_styles[val_handle].style = style;
 	};
-	
+
 	/**
 	 * Fetch the cached version of the styles.
 	 */
@@ -136,7 +137,7 @@ function DynamicStyle()
 	{
 		return _styles[val_handle].style;
 	};
-	
+
 	/**
 	 * Removes the entire style entry. You SHOULD call destroyStyleElement first, otherwise you will lose your reference to the style node.
 	 */
@@ -144,7 +145,7 @@ function DynamicStyle()
 	{
 		_styles[val_handle] = undefined;
 	};
-	
+
 	/**
 	 * Copies cached style data into the page. Generally used after recordStyleData().
 	 */
@@ -153,7 +154,7 @@ function DynamicStyle()
 		var block = _styles[val_handle];
 		block.element.setAttribute('href', _browser.preData+_browser.dataPrep(block.style)+_browser.postData);
 	};
-	
+
 	/**
 	 * Remove the style element from the page and delete the reference to the element. Call this before calling deleteStyleData().
 	 */
@@ -163,7 +164,7 @@ function DynamicStyle()
 		el.parent.removeChild(el);
 		_styles[val_handle].element = undefined;//de-ref
 	};
-	
+
 	/**/
 	/* Style block manipulation */
 	/**/
@@ -173,35 +174,35 @@ function DynamicStyle()
 		createStyleElement(san_handle);
 		modifyBlock(san_handle, style);
 	};
-	
+
 	var modifyBlock = function(val_handle, style)
 	{
 		recordStyleData(val_handle, style);
 		commitStyleData(val_handle);
 	};
-	
+
 	var retrieveBlock = function(val_handle)
 	{
 		return retrieveStyleData(val_handle);
 	};
-	
+
 	var destroyBlock = function(val_handle)
 	{
 		destroyStyleElement(val_handle);
 		deleteStyleData(val_handle);
 	};
-	
+
 	/*====================*
 	 * Privileged Methods *
 	 *====================*/
-	
+
 	/**
 	 * If the handle is new, the style wil be inserted, else, the new style will replace the old one.
 	 */
 	this.setStyle = function(handle, newStyle)
 	{
 		if(!validHandle(handle)) return false;
-		
+
 		if(handleExists(handle))
 		{
 			modifyBlock(handle, newStyle);
@@ -211,27 +212,27 @@ function DynamicStyle()
 			createBlock(handle, newStyle);
 		}
 	};
-	
+
 	/**
 	 * Remove the style named by this handle.
 	 */
 	this.removeStyle = function(handle)
 	{
 		if(!validHandle(handle)) return false;
-		
+
 		if(handleExists(handle))
 		{
 			destroyBlock(handle);
 		}
 	};
-	
+
 	/**
 	 * Retrieve the style named by this handle. (Unlikely to be needed.)
 	 */
 	this.getStyle = function(handle)
 	{
 		if(!validHandle(handle)) return false;
-		
+
 		if(handleExists(handle))
 		{
 			return retrieveBlock(handle);
@@ -241,11 +242,11 @@ function DynamicStyle()
 	/*================*
 	 * Initialization *
 	 *================*/
-	
+
 	this.init = function()
 	{
 		//sniff for browser
-		
+
 		if(window.opera !== undefined) //Opera
 		{
 			_browser = _BROWSER_SPEC['Opera'];
@@ -259,10 +260,10 @@ function DynamicStyle()
 			_browser = _BROWSER_SPEC['Compliant'];
 		}
 	};
-	
+
 	this.constructor = undefined;//seal as a singleton
 }
 
 var DynamicStyle = new DynamicStyle();
 
-Event.observe(window, 'load', DynamicStyle.init, false);
+$(document).ready(DynamicStyle.init);
